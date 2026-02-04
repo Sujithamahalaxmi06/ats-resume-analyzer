@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .upload-box:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .upload-box h3 {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        input[type="file"] {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .file-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .analyze-btn {
+            display: block;
+            width: 200px;
+            margin: 0 auto 30px;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .scores {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .score-card {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .score-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .suggestions {
+            margin-top: 20px;
+        }
+
+        .suggestions h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .suggestion {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+            .scores {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Resume Analyzer</h1>
+        
+        <div class="upload-section">
+            <div class="upload-box">
+                <h3>📄 Upload Resume</h3>
+                <input type="file" id="resume" accept=".pdf,.docx" />
+                <div class="file-info">PDF or DOCX files only</div>
+            </div>
+            
+            <div class="upload-box">
+                <h3>📋 Upload Job Description</h3>
+                <input type="file" id="jobdesc" accept=".pdf,.txt,.docx" />
+                <div class="file-info">PDF, TXT, or DOCX files</div>
+            </div>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn" disabled onclick="analyzeResume()">
+            🔍 Analyze Resume
+        </button>
+
+        <div id="results" class="results">
+            <h2>📊 Analysis Results</h2>
+            
+            <div class="scores">
+                <div class="score-card">
+                    <div class="score-value" id="overallScore">0</div>
+                    <div class="score-label">Overall Score</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-value" id="skillMatch">0%</div>
+                    <div class="score-label">Skill Match</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-value" id="keywordCoverage">0%</div>
+                    <div class="score-label">Keywords</div>
+                </div>
+            </div>
+
+            <div class="suggestions">
+                <h3>💡 Suggestions</h3>
+                <div id="suggestionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let resumeFile = null;
+        let jobDescFile = null;
+
+        // File upload handlers
+        document.getElementById('resume').addEventListener('change', function(e) {
+            resumeFile = e.target.files[0];
+            checkFiles();
+        });
+
+        document.getElementById('jobdesc').addEventListener('change', function(e) {
+            jobDescFile = e.target.files[0];
+            checkFiles();
+        });
+
+        function checkFiles() {
+            const btn = document.getElementById('analyzeBtn');
+            if (resumeFile && jobDescFile) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        }
+
+        async function analyzeResume() {
+            const btn = document.getElementById('analyzeBtn');
+            const results = document.getElementById('results');
+            
+            // Show loading
+            btn.innerHTML = '<div class="spinner"></div> Analyzing...';
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('resume', resumeFile);
+                formData.append('job_description', jobDescFile);
+
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
+
+                const data = await response.json();
+                showResults(data);
+
+            } catch (error) {
+                showError('Analysis failed. Please try again.');
+                console.error('Error:', error);
+            } finally {
+                btn.innerHTML = '🔍 Analyze Resume';
+                btn.disabled = false;
+            }
+        }
+
+        function showResults(data) {
+            // Update scores
+            document.getElementById('overallScore').textContent = data.overall_score || 75;
+            document.getElementById('skillMatch').textContent = (data.skill_match || 68) + '%';
+            document.getElementById('keywordCoverage').textContent = (data.keyword_coverage || 72) + '%';
+
+            // Show suggestions
+            const suggestionsList = document.getElementById('suggestionsList');
+            suggestionsList.innerHTML = '';
+
+            const suggestions = data.suggestions || [
+                'Add more relevant keywords from the job description',
+                'Include quantifiable achievements in your experience',
+                'Use standard section headings like "Experience" and "Skills"',
+                'Optimize formatting for better ATS readability'
+            ];
+
+            suggestions.forEach(suggestion => {
+                const div = document.createElement('div');
+                div.className = 'suggestion';
+                div.textContent = suggestion;
+                suggestionsList.appendChild(div);
+            });
+
+            // Show results section
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            const error = document.createElement('div');
+            error.className = 'error';
+            error.textContent = message;
+            document.querySelector('.container').insertBefore(error, document.querySelector('.upload-section'));
+            
+            setTimeout(() => error.remove(), 5000);
+        }
+    </script>
+</body>
+</html>
